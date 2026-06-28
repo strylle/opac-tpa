@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "opac-tpa",
+  "version": "${version}",
+  "name": "Party TPA",
+  "description": "Lets party members (via Open Parties and Claims) teleport to each other on request, with 3 free lifetime uses then a configurable cooldown.",
+  "authors": [
+    "you"
+  ],
+  "license": "CC0-1.0",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.partytpa.PartyTpaMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "openpartiesandclaims": "*"
+  }
+}
