@@ -14,8 +14,10 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -48,6 +50,8 @@ public class PartyTpaManager {
         public long cooldownMillis = DEFAULT_COOLDOWN_MILLIS;
         public int freeTeleports = DEFAULT_FREE_TELEPORTS;
         public long combatTagMillis = DEFAULT_COMBAT_TAG_MILLIS;
+        public boolean combatTagPartyExempt = true;
+        public boolean combatTagNotify = false;
     }
 
     public static class PendingRequest {
@@ -183,8 +187,29 @@ public class PartyTpaManager {
         save();
     }
 
-    public synchronized void markInCombat(UUID uuid) {
+    public synchronized boolean isCombatTagPartyExempt() {
+        return data.combatTagPartyExempt;
+    }
+
+    public synchronized void setCombatTagPartyExempt(boolean exempt) {
+        data.combatTagPartyExempt = exempt;
+        save();
+    }
+
+    public synchronized boolean isCombatTagNotifyEnabled() {
+        return data.combatTagNotify;
+    }
+
+    public synchronized void setCombatTagNotifyEnabled(boolean enabled) {
+        data.combatTagNotify = enabled;
+        save();
+    }
+
+    /** true if the player was NOT already in combat*/
+    public synchronized boolean markInCombat(UUID uuid) {
+        boolean wasInCombat = getRemainingCombatMillis(uuid) > 0;
         lastCombatAtMillis.put(uuid, System.currentTimeMillis());
+        return !wasInCombat;
     }
 
     public synchronized long getRemainingCombatMillis(UUID uuid) {
@@ -194,6 +219,21 @@ public class PartyTpaManager {
         }
         long remaining = data.combatTagMillis - (System.currentTimeMillis() - taggedAt);
         return Math.max(0, remaining);
+    }
+
+    /** removes & returns the uuids whose combat tag has just expired, for "you can tp again" messages */
+    public synchronized List<UUID> takeExpiredCombatTags() {
+        List<UUID> expired = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<UUID, Long>> it = lastCombatAtMillis.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Long> entry = it.next();
+            if (now - entry.getValue() >= data.combatTagMillis) {
+                expired.add(entry.getKey());
+                it.remove();
+            }
+        }
+        return expired;
     }
 
     // --- Open Parties and Claims funcs ---

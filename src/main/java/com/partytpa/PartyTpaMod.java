@@ -31,8 +31,16 @@ public class PartyTpaMod implements ModInitializer {
             if (!(damageSource.getEntity() instanceof ServerPlayer attacker) || attacker == victim) {
                 return;
             }
-            MANAGER.markInCombat(victim.getUUID());
-            MANAGER.markInCombat(attacker.getUUID());
+            if (MANAGER.isCombatTagPartyExempt()
+                    && MANAGER.isSameParty(victim.getServer(), victim.getUUID(), attacker.getUUID())) {
+                return;
+            }
+            if (MANAGER.markInCombat(victim.getUUID())) {
+                notifyEnteredCombat(victim);
+            }
+            if (MANAGER.markInCombat(attacker.getUUID())) {
+                notifyEnteredCombat(attacker);
+            }
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -54,8 +62,31 @@ public class PartyTpaMod implements ModInitializer {
                             .withStyle(ChatFormatting.GRAY));
                 }
             });
+
+            if (MANAGER.isCombatTagNotifyEnabled()) {
+                for (var uuid : MANAGER.takeExpiredCombatTags()) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+                    if (player != null) {
+                        player.sendSystemMessage(Component.literal(
+                                "You're no longer in combat. Teleports are available again.")
+                                .withStyle(ChatFormatting.GREEN));
+                    }
+                }
+            } else {
+                MANAGER.takeExpiredCombatTags();
+            }
         });
 
         LOGGER.info("[PartyTPA] loaded.");
+    }
+
+    private static void notifyEnteredCombat(ServerPlayer player) {
+        if (!MANAGER.isCombatTagNotifyEnabled()) {
+            return;
+        }
+        long seconds = MANAGER.getCombatTagSeconds();
+        player.sendSystemMessage(Component.literal(
+                "You're in combat! Teleports are disabled for " + seconds + " second(s).")
+                .withStyle(ChatFormatting.RED));
     }
 }

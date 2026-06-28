@@ -19,6 +19,8 @@ A basic anti-combat logging mechanic, you cannot use the command after x seconds
 - `/partytpa cooldown <minutes>` - sets the cooldown applied once a player's free teleports run out.
 - `/partytpa freeteleports <count>` - sets the lifetime number of free teleports per player (uuid based)
 - `/partytpa combattag <seconds>` - how long a player must be out of combat to be able to teleport.
+- `/partytpa combattag partyexempt <boolean>` - if hits from your own party members count as combat tag (default: true, e.g hits from your own party do NOT count).
+- `/partytpa combattag notify <boolean>` - whether players are told when they enter/leave combat tag (default: false).
 - `/partytpa reset cooldown all` - resets everyone's cooldown timer
 - `/partytpa reset cooldown <player>` - resets one player's cooldown timer
 - `/partytpa reset teleports all` - resets everyone's free teleport count

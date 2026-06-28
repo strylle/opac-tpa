@@ -1,5 +1,6 @@
 package com.partytpa;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -41,7 +42,13 @@ public class PartyTpaCommands {
                     .then(literal("combattag")
                             .requires(source -> source.hasPermission(2))
                             .then(argument("seconds", IntegerArgumentType.integer(0))
-                                    .executes(PartyTpaCommands::setCombatTag)))
+                                    .executes(PartyTpaCommands::setCombatTag))
+                            .then(literal("partyexempt")
+                                    .then(argument("enabled", BoolArgumentType.bool())
+                                            .executes(PartyTpaCommands::setCombatTagPartyExempt)))
+                            .then(literal("notify")
+                                    .then(argument("enabled", BoolArgumentType.bool())
+                                            .executes(PartyTpaCommands::setCombatTagNotify))))
                     .then(literal("reset")
                             .requires(source -> source.hasPermission(2))
                             .then(literal("cooldown")
@@ -82,6 +89,26 @@ public class PartyTpaCommands {
         PartyTpaMod.MANAGER.setCombatTagSeconds(seconds);
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "Combat tag is now " + seconds + " second(s). Players can't tpa-out while tagged.")
+                .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int setCombatTagPartyExempt(CommandContext<CommandSourceStack> ctx) {
+        boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
+        PartyTpaMod.MANAGER.setCombatTagPartyExempt(enabled);
+        ctx.getSource().sendSuccess(() -> Component.literal(enabled
+                ? "Hits from your own party no longer count as combat tag."
+                : "Hits from your own party now count as combat tag, same as anyone else.")
+                .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int setCombatTagNotify(CommandContext<CommandSourceStack> ctx) {
+        boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
+        PartyTpaMod.MANAGER.setCombatTagNotifyEnabled(enabled);
+        ctx.getSource().sendSuccess(() -> Component.literal(enabled
+                ? "Players will now be told when they enter/leave combat tag."
+                : "Players will no longer be told when they enter/leave combat tag.")
                 .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -185,6 +212,14 @@ public class PartyTpaCommands {
             long minutes = (remaining / 60_000L) + 1;
             ctx.getSource().sendFailure(Component.literal(
                     "You're out of free teleports for now. Try again in about " + minutes + " more minute(s)."));
+            return 0;
+        }
+
+        long combatRemaining = PartyTpaMod.MANAGER.getRemainingCombatMillis(requester.getUUID());
+        if (combatRemaining > 0) {
+            long seconds = (combatRemaining / 1000L) + 1;
+            ctx.getSource().sendFailure(Component.literal(
+                    "You're in combat and can't send a teleport request for " + seconds + " more second(s)."));
             return 0;
         }
 

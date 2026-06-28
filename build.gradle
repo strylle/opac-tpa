@@ -5,6 +5,7 @@ id 'maven-publish'
 version = project.mod_version
 group = project.maven_group
 repositories {
+mavenCentral()
 exclusiveContent {
 forRepository {
 maven {
@@ -32,6 +33,13 @@ mappings loom.officialMojangMappings()
 modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 modImplementation "maven.modrinth:gF3BGWvG:lQh1EunS"
+modImplementation "maven.modrinth:ohNO6lps:N5qzq0XV" // Forge Config API Port, required by Open Parties and Claims
+
+// FCAPI bundles these via jar-in-jar, but Fabric Loader doesn't extract jar-in-jar
+// libraries reliably inside the Loom dev run tasks. Not needed for a real server's
+// mods/ folder, only for `runServer`/`runClient`.
+implementation "com.electronwill.night-config:core:3.8.3"
+implementation "com.electronwill.night-config:toml:3.8.3"
 }
 processResources {
 def version = project.version
